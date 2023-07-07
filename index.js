@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 require('dotenv').config()
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
 // Middleware
@@ -30,22 +30,42 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    const usersCollection = client.db("fullResturentDb").collection("users");
     const menuCollection = client.db("fullResturentDb").collection("menu");
     const reviewCollection = client.db("fullResturentDb").collection("reviews");
     const cartCollection = client.db("fullResturentDb").collection("carts");
 
 
+// users related apis
+app.post('/users', async(req,res)=>{
+  const user = req.body;
+  const result = await usersCollection.insertOne(user);
+  res.send(result)
+})
 
+
+// menu related apis
     app.get('/menu', async (req, res) => {
       const result = await menuCollection.find().toArray();
       res.send(result)
     })
+
+    // review related apis
     app.get('/reviews', async (req, res) => {
       const result = await reviewCollection.find().toArray();
       res.send(result)
     })
 
     // cart collection 
+    app.get('/carts', async(req,res)=>{
+      const email = req.query.email;
+      if(!email){
+        res.send([])
+      }
+      const query = {email: email};
+      const result = await cartCollection.find(query).toArray();
+      res.send(result)
+    })
 
     app.post('/carts', async (req, res) => {
       const item = req.body;
@@ -53,6 +73,13 @@ async function run() {
       const result = await cartCollection.insertOne(item)
       res.send(result)
     })
+
+app.delete('/carts/:id', async(req,res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await cartCollection.deleteOne(query);
+   res.send(result)
+})
 
 
     // Send a ping to confirm a successful connection
